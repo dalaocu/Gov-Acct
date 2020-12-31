@@ -1,13 +1,9 @@
 package com.webank.blockchain.gov.acct.config;
 
-import com.google.common.collect.Maps;
-import com.webank.blockchain.gov.acct.constant.AccountConstants;
-import com.webank.blockchain.gov.acct.contract.AccountManager;
-import com.webank.blockchain.gov.acct.contract.WEGovernance;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.lang3.StringUtils;
 import org.fisco.bcos.sdk.BcosSDK;
 import org.fisco.bcos.sdk.client.Client;
@@ -20,6 +16,13 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.google.common.collect.Maps;
+import com.webank.blockchain.gov.acct.constant.AccountConstants;
+import com.webank.blockchain.gov.acct.contract.AccountManager;
+import com.webank.blockchain.gov.acct.contract.WEGovernance;
+
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author wesleywang @Description:
  * @date 2020/11/9
@@ -29,38 +32,28 @@ import org.springframework.context.annotation.Configuration;
 public class SDKBeanConfig {
 
     @Autowired private SystemEnvironmentConfig systemEnvironmentConfig;
-
+    
     @Bean
     public CryptoKeyPair cryptoKeyPair() throws ConfigException {
         Client client = getClient();
-        if(StringUtils.isNotBlank(systemEnvironmentConfig.getHexPrivateKey())) {
-            log.info("Found hex private key in application.properties.");
-            return client.getCryptoSuite().createKeyPair(systemEnvironmentConfig.getHexPrivateKey());
-        }
-        log.info("Hex private key not found.");
-        CryptoKeyPair cryptoKeyPair = client.getCryptoSuite().createKeyPair();
-        log.info("Generate the default private key: {}", cryptoKeyPair.getHexPrivateKey());
-        log.info("The default address is {}", cryptoKeyPair.getAddress());
-        return cryptoKeyPair;
+        return client.getCryptoSuite().createKeyPair();
     }
-
+    
     @Bean
     public Client getClient() throws ConfigException {
         BcosSDK sdk = getSDK();
         return sdk.getClient(systemEnvironmentConfig.getGroupId());
     }
-
+    
     @Bean
     public BcosSDK getSDK() throws ConfigException {
         ConfigProperty configProperty = new ConfigProperty();
         setPeers(configProperty);
         setCertPath(configProperty);
-        ConfigOption option =
-                new ConfigOption(configProperty, systemEnvironmentConfig.getEncryptType());
-        log.info("Is gm {}", systemEnvironmentConfig.getEncryptType() == 1);
+        ConfigOption option = new ConfigOption(configProperty);
         return new BcosSDK(option);
     }
-
+    
     public void setPeers(ConfigProperty configProperty) {
         String[] nodes = StringUtils.split(systemEnvironmentConfig.getNodeStr(), ";");
         List<String> peers = Arrays.asList(nodes);
@@ -68,7 +61,7 @@ public class SDKBeanConfig {
         network.put("peers", peers);
         configProperty.setNetwork(network);
     }
-
+    
     public void setCertPath(ConfigProperty configProperty) {
         Map<String, Object> cryptoMaterial = Maps.newHashMapWithExpectedSize(1);
         cryptoMaterial.put("certPath", "config");
